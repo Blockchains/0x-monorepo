@@ -1,0 +1,42 @@
+{
+  "network": "monad-mainnet",
+  "chainId": 143,
+  "rpc": "https://rpc.monad.xyz",
+  "explorer": "https://monadvision.com",
+  "status": "ALPHA - unaudited. Only deposit what you're happy to lose.",
+  "contracts": {
+    "AgentVaultFactory": {
+      "address": "0x8738B74778502ff3623A8319837A819d8dBdEeB7",
+      "tx": "0x5f510194a3cd4ea6d96da0e2c23a03d38b885d61d206fa5869f789f8a6f01e21",
+      "vaultCap": "1 MON",
+      "globalCap": "10 MON",
+      "sourcify": "exact_match"
+    },
+    "ShowcaseAgentVault": {
+      "address": "0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97",
+      "sourcify": "exact_match"
+    }
+  },
+  "showcase": {
+    "agent": "0x3aa2aCE2a2dA4bE5FE4309cB175D394A63Fb5fCC",
+    "steps": "frontend/showcase-143.json",
+    "netMonSpent": "1.028184583035106325"
+  },
+  "dapps": "frontend/dapps.json (verified official addresses only; Kuru Flow Entrypoint live from docs.kuru.io)",
+  "kuru": {
+    "source": "https://docs.kuru.io/contracts/Contract-addresses",
+    "KuruFlowEntrypoint": "0xb3e6778480b2E488385E8205eA05E20060B813cb",
+    "KuruFlowRouter": "0x0d3a1BE29E9dEd63c7a5678b31e847D68F71FFa2",
+    "KuruForwarder": "0x974E61BBa9C4704E8Bcc1923fdC3527B41323FAA",
+    "MarginAccount": "0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5",
+    "MonadDeployer": "0xe29309e308af3EE3B1a414E97c37A58509f27D1E",
+    "Router": "0xd651346d7c789536ebf06dc72aE3C8502cd695CC",
+    "markets": {
+      "MON-AUSD": "0x131a2e70a5b31a517a74b8c567149bc294470da9",
+      "MON-USDC": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394"
+    },
+    "flowSwapSelector": "0xce1e7030",
+    "wildTrader": "executor/kuru-wild-trader.mjs",
+    "notes": "Kuru is spot CLOB + Flow aggregator (not perpetual futures). Agent vaults allowlist the Flow entrypoint; outputs credit msg.sender (the vault). Raise VAULT_CAP on a new factory deploy for >1 MON wild trading."
+  }
+}

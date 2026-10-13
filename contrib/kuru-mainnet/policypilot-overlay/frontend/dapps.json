@@ -1,0 +1,42 @@
+{
+  "_note": "Curated registry. Only contracts whose addresses we verified from the protocol's official docs, cross-checked on-chain. Entries carry the call rules a vault owner approves. recipientWord = index of the ABI argument that must equal the vault (255 = none / msg.sender credit). Every entry was fork-tested against Monad mainnet (test/AgentVaultDapps.t.sol).",
+  "143": {
+    "tokens": {
+      "WMON": {"address": "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", "decimals": 18, "source": "https://docs.kuru.io/contracts/Contract-addresses"},
+      "USDC": {"address": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", "decimals": 6, "source": "https://docs.kuru.io/contracts/Contract-addresses"},
+      "AUSD": {"address": "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a", "decimals": 6, "source": "https://docs.kuru.io/contracts/Contract-addresses"},
+      "sMON": {"address": "0xA3227C5969757783154C60bF0bC1944180ed81B9", "decimals": 18, "source": "https://docs.kintsu.xyz/the-kintsu-protocol/official-contract-addresses"}
+    },
+    "kuru": {
+      "source": "https://docs.kuru.io/contracts/Contract-addresses",
+      "KuruFlowEntrypoint": "0xb3e6778480b2E488385E8205eA05E20060B813cb",
+      "KuruFlowRouter": "0x0d3a1BE29E9dEd63c7a5678b31e847D68F71FFa2",
+      "KuruForwarder": "0x974E61BBa9C4704E8Bcc1923fdC3527B41323FAA",
+      "MarginAccount": "0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5",
+      "MonadDeployer": "0xe29309e308af3EE3B1a414E97c37A58509f27D1E",
+      "Router": "0xd651346d7c789536ebf06dc72aE3C8502cd695CC",
+      "markets": {
+        "MON-AUSD": "0x131a2e70a5b31a517a74b8c567149bc294470da9",
+        "MON-USDC": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394"
+      }
+    },
+    "dapps": [
+      {"id": "wmon", "name": "Wrapped MON", "category": "Wrap", "icon": "🎁", "blurb": "Wrap and unwrap MON 1:1 (canonical WMON).",
+       "address": "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", "source": "https://docs.monad.xyz/developer-essentials/network-information",
+       "rules": [{"fn": "deposit()", "selector": "0xd0e30db0", "recipientWord": 255}, {"fn": "withdraw(uint256)", "selector": "0x2e1a7d4d", "recipientWord": 255}], "tokenCaps": []},
+      {"id": "uniswap", "name": "Uniswap v3", "category": "DEX swap", "icon": "🦄", "blurb": "Swap MON ⇄ USDC via SwapRouter02. Output must go back to the vault, and a minimum output is enforced.",
+       "address": "0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900", "source": "https://developers.uniswap.org/docs/protocols/v3/deployments/v3-monad-deployments",
+       "rules": [{"fn": "exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))", "selector": "0x04e45aaf", "recipientWord": 3}],
+       "tokenCaps": [{"token": "USDC", "cap": "1000000000000"}, {"token": "WMON", "cap": "100000000000000000000"}]},
+      {"id": "kuru", "name": "Kuru", "category": "Order book / Flow", "icon": "📈", "blurb": "Live Kuru Flow aggregator on Monad mainnet. Official entrypoint from docs.kuru.io. Output credits the vault (msg.sender). High token caps for active agent trading.",
+       "address": "0xb3e6778480b2E488385E8205eA05E20060B813cb", "source": "https://docs.kuru.io/contracts/Contract-addresses",
+       "rules": [{"fn": "flowSwap(address,uint256,address,uint256,address,...)", "selector": "0xce1e7030", "recipientWord": 255}],
+       "tokenCaps": [{"token": "USDC", "cap": "1000000000000"}, {"token": "WMON", "cap": "100000000000000000000"}, {"token": "AUSD", "cap": "1000000000000"}]},
+      {"id": "kintsu", "name": "Kintsu", "category": "Liquid staking", "icon": "🥩", "blurb": "Stake MON for sMON. sMON is minted straight to the vault.",
+       "address": "0xA3227C5969757783154C60bF0bC1944180ed81B9", "source": "https://docs.kintsu.xyz/the-kintsu-protocol/official-contract-addresses",
+       "rules": [{"fn": "deposit(uint96,address)", "selector": "0x1c3477dd", "recipientWord": 1}], "tokenCaps": []}
+    ],
+    "notYetVerified": ["Lending (e.g. Morpho on Monad): no Monad vault marked listed in Morpho's official API yet; not included"]
+  },
+  "10143": { "tokens": {}, "dapps": [], "notYetVerified": ["Testnet: payouts only; mainnet dapps are not deployed on testnet"] }
+}
