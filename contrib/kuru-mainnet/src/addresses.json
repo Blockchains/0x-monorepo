@@ -1,0 +1,46 @@
+{
+  "source": "https://docs.kuru.io/contracts/Contract-addresses",
+  "chainId": 143,
+  "network": "monad-mainnet",
+  "contracts": {
+    "KuruFlowEntrypoint": "0xb3e6778480b2E488385E8205eA05E20060B813cb",
+    "KuruFlowRouter": "0x0d3a1BE29E9dEd63c7a5678b31e847D68F71FFa2",
+    "KuruForwarder": "0x974E61BBa9C4704E8Bcc1923fdC3527B41323FAA",
+    "MarginAccount": "0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5",
+    "MonadDeployer": "0xe29309e308af3EE3B1a414E97c37A58509f27D1E",
+    "Router": "0xd651346d7c789536ebf06dc72aE3C8502cd695CC"
+  },
+  "tokens": {
+    "WMON": { "address": "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", "decimals": 18 },
+    "AUSD": { "address": "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a", "decimals": 6 },
+    "USDC": { "address": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", "decimals": 6 },
+    "NATIVE_MON": { "address": "0x0000000000000000000000000000000000000000", "decimals": 18 }
+  },
+  "markets": {
+    "MON-AUSD": "0x131a2e70a5b31a517a74b8c567149bc294470da9",
+    "MON-USDC": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394"
+  },
+  "flow": {
+    "apiBase": "https://ws.kuru.io/api",
+    "swapSelector": "0xce1e7030",
+    "notes": "Flow credits msg.sender. Spot CLOB + aggregator — not perpetual futures."
+  },
+  "agentThresholds": {
+    "description": "High thresholds for mad live agent usage on Kuru / vault harnesses",
+    "vaultCapMon": 100,
+    "globalCapMon": 10000,
+    "defaultBudgetMon": 1,
+    "defaultPerActionCapMon": 0.5,
+    "defaultDepositMon": 1,
+    "tokenApprovalCaps": {
+      "USDC": "1000000000000",
+      "AUSD": "1000000000000",
+      "WMON": "100000000000000000000"
+    },
+    "wildTrader": {
+      "defaultAmountMon": "0.05",
+      "defaultLoops": 20,
+      "delayMs": 1500
+    }
+  }
+}

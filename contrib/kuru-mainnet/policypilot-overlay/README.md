@@ -1,0 +1,87 @@
+# PolicyPilot (Monad) – bounded transaction execution reference implementation
+
+**Pitch video (2 min):** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/pitch.mp4)
+
+**Demo video:** [watch](https://blockchains.github.io/policypilot-monad/demo.html) · [download MP4](https://blockchains.github.io/policypilot-monad/demo.mp4)
+Status: IMPLEMENTED + TESTED locally (Foundry, anvil) and DEPLOYED to Monad testnet (test token only; not mainnet).
+- `src/PolicyPilot.sol` non-upgradeable contract (OpenZeppelin v5.7.0 SafeERC20). `src/MockToken.sol` test-only.
+- Tests: all pass under `forge test` (PolicyPilot, AgentVault unit/fuzz/invariant, dapp-call mocks). PolicyPilot invariants: `totalSpent <= budget`, `totalSpent == sum of transfers == recipient balance`, `remainingBudget == budget - totalSpent` (exact). Mainnet fork tests (`AgentVaultForkTest`: WMON wrap/unwrap, Uniswap v3 MON→USDC→MON, Kintsu stake, blocked calls) run with `forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultForkTest`.
+- `executor/` viem deterministic executor + `e2e-anvil.mjs` local demo (writes evidence JSON).
+- `frontend/index.html` static read-only demo dashboard: live state and budget gauge, event timeline, decoded on-chain rejections, read-only `eth_call` policy simulator, architecture, judge quick-start. Reads via RPC, or the Envio indexer via `?indexer=`.
+- `indexer/` Envio HyperIndex indexer for all PolicyPilot events (local).
+Run: `forge test -vv`; `anvil &`; `cd executor && node e2e-anvil.mjs`.
+Deploy yourself: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+## v3: one mobile-native app ("Love agents. Love control. PolicyPilot.")
+
+https://blockchains.github.io/policypilot-monad/ is now a single Next.js PWA (installable, safe-area aware, bottom tab bar on phones and tablets). Tabs:
+- **Launch**: the novice flow. Connect wallet → connect agent (create an in-browser agent key, or paste an external agent address such as an ElizaOS agent) → switch rules on/off (total budget, per-action cap, allowed services, payees, start paused) → **Let it go into the wild** (one `createVault` tx with every rule baked in, plus optional agent gas).
+- **Activity**: a live feed of real transactions (the mainnet showcase vault plus your own), with allowed/blocked filters, plain-English revert reasons, a spend chart, and quick "run your agent" / "😈 break it" actions.
+- **Agents**: your vaults, read from the factory: budget ring, a kill-switch toggle, deposit/withdraw, pull everything back, and withdraw tokens.
+- **Services**: the top Monad services, each either live or honestly marked "coming soon".
+- **Policy**: the original PolicyPilot dashboard (testnet).
+
+Wallets: EIP-6963 multi-wallet discovery (MetaMask, Rabby, Phantom, Backpack, OKX, Coinbase… whatever is injected), a legacy `window.ethereum` fallback, and official deep links that open the app in a mobile wallet's browser (MetaMask, Phantom, Coinbase, OKX, Backpack, Trust). **WalletConnect is not included**: it needs a Reown project ID, which means a third-party signup.
+
+Live services on mainnet. Each address comes from the protocol's own docs and passes a mainnet fork test (`forge test --fork-url https://rpc.monad.xyz --match-contract AgentVaultFork`):
+
+| Service | Contract | Official source | Fork test |
+|---|---|---|---|
+| Pay approved payees | vault `execute` | – | unit/fuzz/invariant |
+| Uniswap v3 swap | SwapRouter02 `0xfE31F71C1b106EAc32F1A19239c9a9A72ddfb900` | developers.uniswap.org (v3 Monad deployments) | `test_fork_uniswap_mon_to_usdc_and_back` |
+| PancakeSwap v3 swap | SmartRouter `0x21114915Ac6d5A2e156931e20B20b038dEd0Be7C` (QuoterV2 `0xB048…5997`) | developer.pancakeswap.finance/contracts/v3/addresses | `test_fork_pancake_mon_to_usdc_and_back` |
+| Kintsu liquid staking (sMON) | `0xA3227C5969757783154C60bF0bC1944180ed81B9` | docs.kintsu.xyz | `test_fork_kintsu_stake` |
+| aPriori liquid staking (aprMON) | `0x0c65A0BC65a5D819235B71F554D210D3F80E0852` | apriori-docs.gitbook.io (smart contract integration) | `test_fork_apriori_stake` |
+| Magma liquid staking (gMON) | `0x8498312A6B3CbD158bf0c93AbdCF29E6e4F55081` | docs.hydrogenlabs.xyz/magma | `test_fork_magma_stake` |
+| Wrapped MON | `0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A` | docs.monad.xyz | `test_fork_wmon_wrap_unwrap` |
+
+**Kuru (live):** official mainnet contracts from [docs.kuru.io/contracts/Contract-addresses](https://docs.kuru.io/contracts/Contract-addresses) — `KuruFlowEntrypoint` `0xb3e677…13cb` is allowlisted for agent vaults (selector `0xce1e7030`, outputs credit the vault as `msg.sender`). Token approval caps are raised for high-activity trading. Wild loop trader: `node executor/kuru-wild-trader.mjs` (needs `KURU_PRIVATE_KEY`). Note: Kuru is spot CLOB + Flow, not perpetual futures.
+
+Coming soon, and not enabled: lending (Morpho is on Monad, but no vault is "listed" in Morpho's official API yet), USDC payouts (needs a new vault version, because ERC-20 `transfer` is blocked by design), bridges (the output can't be forced back to the vault), NFTs (not verified).
+
+These are new rules for new vaults. The deployed factory is unchanged, so no redeploy was needed, and existing vaults keep their own rules.
+
+## Agent spending harness: live on Monad mainnet (alpha)
+
+> **Alpha · unaudited contract · only deposit what you're happy to lose.** The vault cap is 1 MON and the global cap is 10 MON.
+
+Site: https://blockchains.github.io/policypilot-monad/ ("Is this how easy it is to put a harness on agentic spending?"). Pick an agent, set the limits with sliders and approve dapp cards. One transaction creates a vault with every rule baked in. The agent key is generated and kept in your browser only.
+
+- `AgentVaultFactory` on mainnet: `0x8738B74778502ff3623A8319837A819d8dBdEeB7` (Sourcify exact match). The factory has no owner and no admin path to user funds.
+- Showcase vault: `0x379e0C3Ecba46d62dAdCf26dBecd0F26A2cdCA97` (Sourcify exact match). Every allowed and blocked action is in `frontend/showcase-143.json`, and the site's history timeline re-reads it live from chain.
+- Policy: target+selector allowlist, recipient word must equal the vault, a per-action MON cap, a total budget, per-token caps, exact approvals reset to 0, minOut checks and pause. Approve/transfer/permit selectors are forbidden.
+- Dapps are verified official addresses only (`frontend/dapps.json`): WMON, Uniswap v3 SwapRouter02, Kuru Flow Entrypoint, and Kintsu sMON. Lending (Morpho) is not yet verified and is not enabled.
+- To raise the 1 MON vault / 10 MON global alpha caps for mad Kuru usage, redeploy the factory with `VAULT_CAP` / `GLOBAL_CAP` (up to 100 / 10_000 MON) and open the app with `?factory=0x…`.
+- Testnet factory: `0x2E40E06C0B864caF87cCB00f31e6EE2d0689cDd7`. The older mUSD consumer app is at `agents-testnet.html`.
+
+## Dashboard (Next.js) and agent packages
+
+- `web/`: a Next.js App Router + TypeScript + Tailwind + lucide-react + viem dashboard, statically exported to the site root. It shows the live block, chain id, a copyable address, a Sourcify badge and the Envio/RPC mode; metric cards for budget progress, remaining (with a warning under 20%), cap, firewall Active/Paused and execution count; a policy sandbox (client precheck plus a real `eth_call` of `execute()` from the on-chain executor, giving PASS or the exact custom error); and a Payouts/Audit Log table with explorer links, polling every 8s. It reads from Envio when `NEXT_PUBLIC_ENVIO_URL` is set and falls back to RPC logs otherwise. The vault harness lives at `/harness.html`.
+- `packages/agent-kit`: `PolicyClient` with `checkPolicy(recipient, amount)` and `executeSafePayment(recipient, amount, {idempotencyKey})`, written against the real deployed ABI (`execute`, `paused`, `remainingBudget`, errors `Paused`, `RecipientNotAllowed`, `PerRequestLimitExceeded`, `BudgetExceeded`, `RequestAlreadyExecuted`, ...). It is tested against anvil (`npm test`).
+- `packages/plugin-eliza`: an ElizaOS (`@elizaos/core` 1.x) plugin with the `EXECUTE_POLICY_PAYMENT` action and the `POLICYPILOT_STATE` provider. Settings: `POLICYPILOT_ADDRESS`, `POLICYPILOT_RPC`, `POLICYPILOT_CHAIN_ID` and the secret `POLICYPILOT_EXECUTOR_KEY`.
+
+## Live on Monad testnet (chain 10143)
+- **PolicyPilot:** [`0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E`](https://testnet.monadexplorer.com/address/0x583fDB6441a9bCE517CF5bb15b9dB7340BB57D4E) (Sourcify verified, exact runtime match)
+- **MockToken (mUSD, test-only):** [`0xE2966C817267FC7E63362895Cf55C6cb2548b9E3`](https://testnet.monadexplorer.com/address/0xE2966C817267FC7E63362895Cf55C6cb2548b9E3) (Sourcify verified)
+- Policy: executor = admin = `0x549D8c5D94f8ec4Ea488a0283f8EbF16b509b411`, 2 allowlisted recipients, per-request limit 100 mUSD, budget 250 mUSD, funded 1000 mUSD.
+- Live viewer: https://blockchains.github.io/policypilot-monad/ · Record: [`deployments/monad-testnet.json`](deployments/monad-testnet.json) · Reproduce: [`docs/DEPLOY.md`](docs/DEPLOY.md)
+
+| demo step | result | tx |
+|---|---|---|
+| valid_execute_1 | success | [0x8e799909dd71…](https://testnet.monadexplorer.com/tx/0x8e799909dd7155cac966ff15e14eb72d7cbaedc8bc8b58952f5392ed8b260305) |
+| valid_execute_2 | success | [0x593705cc5d3b…](https://testnet.monadexplorer.com/tx/0x593705cc5d3bbcd6932cc37574e73bd97937ccbeca76bb151c00788ec6e451c3) |
+| replay_req_1 | reverted | [0x618511db3427…](https://testnet.monadexplorer.com/tx/0x618511db34273878d7b83bb8bd1af5b2062e7c94fe3a806db30a2efae7da52f9) |
+| reject_recipient | reverted | [0x475a58183dc2…](https://testnet.monadexplorer.com/tx/0x475a58183dc244e3eb5caddd2dbcd4085a54e7da54f738b82eeb24dff85aeb6a) |
+| reject_per_request_limit | reverted | [0x540ff26d3148…](https://testnet.monadexplorer.com/tx/0x540ff26d3148eb511c8967b17fe05df194502d9bfd142d6f55076e6def3601a4) |
+| reject_budget | reverted | [0xc61f401a6e45…](https://testnet.monadexplorer.com/tx/0xc61f401a6e45d60766c9772d85b00894fc5dbc824fca5e850f5c50ed63fdad59) |
+| pause | success | [0x195ac238401b…](https://testnet.monadexplorer.com/tx/0x195ac238401bf6fd8681fe6591bc976e037bd5850aa5331759b82750939fcfa7) |
+| reject_paused | reverted | [0x1bbaf1dfb8ba…](https://testnet.monadexplorer.com/tx/0x1bbaf1dfb8badf94241c3e150293315d09831ae138fb14904b05b99c55023977) |
+| unpause | success | [0x919240de6de0…](https://testnet.monadexplorer.com/tx/0x919240de6de013e59d3038b7a6f9493e5e065bdf9d0c78debb16e4f666dffc26) |
+
+Rejections are real on-chain **reverted** transactions (sent with a fixed gas limit after an `eth_call` preflight captured the revert reason).
+
+## Envio HyperIndex indexer (optional data source)
+`indexer/` is an Envio HyperIndex project that indexes every PolicyPilot event on Monad testnet (PerRequestLimitSet, BudgetSet, RecipientSet, Executed, PausedSet) into `PolicyState`, `Execution`, `Recipient` and an append-only `PolicyEvent` audit log, served over GraphQL.
+The viewer reads state, execution history and the audit log from it when opened with `?indexer=<graphql url>` (or `indexerUrl` in `frontend/deployment.json`), and falls back to direct RPC otherwise or if the indexer is unreachable.
+- Verified against the live contract: all 8 events indexed; indexer values match direct `cast call` reads (budget 250, limit 100, totalSpent 200 mUSD, paused false). Evidence: [`docs/envio-indexer-check.txt`](docs/envio-indexer-check.txt). Video (45 s): [envio-demo.mp4](https://blockchains.github.io/policypilot-monad/envio-demo.mp4).
+- **Local only**: not hosted (no Envio Cloud), so the public site runs in RPC mode. Uses the public Monad RPC as source, so no HyperSync token or Envio account is needed. Run: [`indexer/README.md`](indexer/README.md).
